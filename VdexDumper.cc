@@ -36,8 +36,10 @@ VdexDumper::VdexDumper(const std::string& package)
 
 VdexDumper::~VdexDumper()
 {
-  if (mem_fd_ > 0)
+  if (mem_fd_ > 0) {
     detachProcess(tid_);
+    close(mem_fd_);
+  }
   bzero(this, sizeof(VdexDumper));
 }
 
