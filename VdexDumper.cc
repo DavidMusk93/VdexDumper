@@ -30,7 +30,8 @@ VdexDumper::VdexDumper(const std::string& package)
         return;
       }
     }
-    PERROR("ptrace");
+    else
+      PERROR("ptrace");
   }
 }
 
@@ -143,14 +144,17 @@ end:
 
 uint32_t ProcHelper::findProcess(const std::string& cmdline)
 {
-  auto pidFilter = [](const dirent *entry) {
-    return atoi(entry->d_name) > 1;
+  static const int kMinPid = 100;
+  auto pidFilter = [&](const dirent *entry) {
+    return atoi(entry->d_name) > kMinPid;
   };
   Dir dir("/proc");
   char path[128];
   char buf[256];
   if (bool(dir)) {
     auto pids = dir.list(pidFilter);
+    // Speed up the (pid) search process
+    std::sort(pids.begin(), pids.end(), std::greater<std::string>());
     for (const auto& pid: pids) {
       sprintf(path, "/proc/%s/cmdline", pid.c_str());
       File f(path);
