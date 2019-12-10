@@ -1,6 +1,7 @@
 all: vdexdumper
 
 SECURE_DIR := $(shell bash helper.sh 0)
+OUTPUT_DIR := ./adb
 
 .PHONY: vdexdumper
 
@@ -11,11 +12,11 @@ vdexdumper:
 .PHONY: pull
 
 pull:
-	@mkdir -p adb
-	adb pull ${SECURE_DIR}/data ./adb/
-	adb pull ${SECURE_DIR}/system ./adb/
+	@mkdir -p ${OUTPUT_DIR}
+	adb pull ${SECURE_DIR}/data ${OUTPUT_DIR}/
+	adb pull ${SECURE_DIR}/system ${OUTPUT_DIR}/
 
 .PHONY: clean
 
 clean:
-	@rm -rf ./libs ./obj ./adb
+	@rm -rf ./libs ./obj ${OUTPUT_DIR}
