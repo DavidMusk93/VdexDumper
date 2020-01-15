@@ -3,7 +3,7 @@
 namespace sun
 {
 
-Logger Logger::instance = Logger();
+Logger Logger::instance;
 Logger &Logger::getInstance() { return Logger::instance; }
 
 void Logger::info(const char *fmt, ...)

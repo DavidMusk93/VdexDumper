@@ -28,9 +28,7 @@ class VdexDumper
 
  private:
   int pid_;
-  int tid_;
   int mem_fd_;
-  // std::vector<MemRegion> regions_;
 };
 
 class ProcHelper

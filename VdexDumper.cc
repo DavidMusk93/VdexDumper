@@ -15,18 +15,18 @@ namespace sun
 #define detachProcess(pid) ptrace(PTRACE_DETACH, pid, nullptr, nullptr);
 
 VdexDumper::VdexDumper(const std::string& package)
-  : tid_(-1), mem_fd_(-1)
+  : mem_fd_(-1)
 {
   char path[128];
   pid_ = ProcHelper::findProcess(package);
-  tid_ = (int)ProcHelper::LastTaskId(pid_);
-  if (tid_) {
-    if (attachProcess(tid_) == 0) {
-      sprintf(path, "/proc/%d/mem", tid_);
+  Logger::getInstance().info("Target pid:%d\n",pid_);
+  if (pid_) {
+    if (attachProcess(pid_) == 0) {
+      sprintf(path, "/proc/%d/mem", pid_);
       mem_fd_ = ::open(path, O_RDONLY);
       if (mem_fd_ < 0) {
         PERROR("Open %s failed", path);
-        detachProcess(tid_);
+        detachProcess(pid_);
         return;
       }
     }
@@ -38,7 +38,7 @@ VdexDumper::VdexDumper(const std::string& package)
 VdexDumper::~VdexDumper()
 {
   if (mem_fd_ > 0) {
-    detachProcess(tid_);
+    detachProcess(pid_);
     close(mem_fd_);
   }
   bzero(this, sizeof(VdexDumper));
@@ -115,7 +115,7 @@ int VdexDumper::dumpVdex()
         pread64(mem_fd_, buf, gap, region.start);
         // lseek64(mem_fd_, region.start, SEEK_SET);
         // read(mem_fd_, buf, gap);
-        Logger::getInstance().info("Save %s\n", (const char *)f);
+        Logger::getInstance().info("Save (%10zu)%s\n",gap,(const char *)f);
         f.store(buf, gap);
       }
       if (buf)
@@ -153,19 +153,14 @@ uint32_t ProcHelper::findProcess(const std::string& cmdline)
   char buf[256];
   if (bool(dir)) {
     auto pids = dir.list(pidFilter);
-    // Speed up the (pid) search process
-    std::sort(pids.begin(), pids.end(), std::greater<std::string>());
+    // First process take precedence
+    std::sort(pids.begin(), pids.end());
     for (const auto& pid: pids) {
       sprintf(path, "/proc/%s/cmdline", pid.c_str());
       File f(path);
       f.pread(buf, sizeof(buf));
-      // printf("buf:(%s)%.*s\n", pid.c_str(), (int)sizeof(buf), buf);
       if (strcmp(buf, cmdline.c_str()) == 0)
         return std::stoul(pid);
-      // auto s = f.load();
-      // debug("walk %s:%s:%s", pid.c_str(), s.c_str(), buf);
-      // if (s == cmdline)
-      //   return std::stoul(s);
     }
   }
   return 0;
