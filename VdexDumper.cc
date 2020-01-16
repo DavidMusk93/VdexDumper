@@ -1,7 +1,10 @@
 #include <string.h>
 #include <sys/ptrace.h>
+#include <sys/syscall.h>
+
 #include <algorithm>
 // #include <fstream>
+
 #include "VdexDumper.h"
 #include "FileUtils.h"
 #include "Logger.h"
@@ -23,7 +26,7 @@ VdexDumper::VdexDumper(const std::string& package)
   if (pid_) {
     if (attachProcess(pid_) == 0) {
       sprintf(path, "/proc/%d/mem", pid_);
-      mem_fd_ = ::open(path, O_RDONLY);
+      mem_fd_=syscall(SYS_openat,-1,path,O_RDONLY);
       if (mem_fd_ < 0) {
         PERROR("Open %s failed", path);
         detachProcess(pid_);
@@ -67,7 +70,7 @@ std::vector<MemRegion> VdexDumper::findVdex()
       region.end = strtoull(++endptr, nullptr, 16);
       if (region.end - region.start < VDEX_MIN_LENGTH)
         continue;
-      pread64(mem_fd_, &header, sizeof(header), region.start);
+      (void)syscall(SYS_pread64,mem_fd_,&header,sizeof(header),region.start);
       if (strcmp(header.GetMagic(), kVdexMagicAndVersion) != 0)
         continue;
       // *header = 0;
