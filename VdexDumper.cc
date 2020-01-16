@@ -87,8 +87,7 @@ std::vector<MemRegion> VdexDumper::findVdex()
     }
   }
 end:
-  if (buf)
-    free(buf);
+  free(buf);
   return vec;
 }
 
@@ -153,8 +152,10 @@ uint32_t ProcHelper::findProcess(const std::string& cmdline)
   char buf[256];
   if (bool(dir)) {
     auto pids = dir.list(pidFilter);
-    // First process take precedence
-    std::sort(pids.begin(), pids.end());
+    // Last process (usually larger pid number) take precedence. Sometimes,
+    // parent process may be traced (protected) by child process, thus
+    // parent process (little value) is unable (not permitted) to ptrace.
+    std::sort(pids.begin(),pids.end(),std::greater<std::string>());
     for (const auto& pid: pids) {
       sprintf(path, "/proc/%s/cmdline", pid.c_str());
       File f(path);
